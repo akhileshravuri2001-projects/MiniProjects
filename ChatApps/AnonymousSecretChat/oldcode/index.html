@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>2-User Chat</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: "Segoe UI", sans-serif;
+      background: #f5f7fa;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .chat-container {
+      width: 100%;
+      max-width: 500px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+    .chat-header {
+      background-color: #4a90e2;
+      color: white;
+      padding: 16px;
+      text-align: center;
+      font-size: 1.2rem;
+    }
+    #login {
+      padding: 20px;
+      text-align: center;
+    }
+    #username {
+      padding: 10px;
+      width: 80%;
+      margin-bottom: 10px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+    #join {
+      padding: 10px 20px;
+      background: #4a90e2;
+      border: none;
+      color: white;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    #chat {
+      display: none;
+      flex-direction: column;
+      height: 400px;
+    }
+    #messages {
+      list-style: none;
+      margin: 0;
+      padding: 10px;
+      overflow-y: auto;
+      flex-grow: 1;
+      max-height: 300px;
+    }
+    #messages li {
+      padding: 10px;
+      margin-bottom: 8px;
+      border-radius: 8px;
+    }
+    #messages li strong {
+      color: #333;
+    }
+    #messages li:nth-child(even) {
+      background: #f0f0f0;
+    }
+    .info {
+      text-align: center;
+      font-size: 0.9em;
+      color: gray;
+    }
+    #form {
+      display: flex;
+      border-top: 1px solid #ddd;
+      padding: 10px;
+    }
+    #input {
+      flex: 1;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      margin-right: 10px;
+    }
+    #send {
+      padding: 10px 16px;
+      background: #4a90e2;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    #send:hover {
+      background: #3b7bd4;
+    }
+  </style>
+</head>
+<body>
+  <div class="chat-container">
+    <div class="chat-header">Secret Chat</div>
+
+    <div id="login">
+      <input id="username" placeholder="Enter your name" />
+      <br />
+      <button id="join">Join Chat</button>
+    </div>
+
+    <div id="chat">
+      <ul id="messages"></ul>
+      <form id="form">
+        <input id="input" autocomplete="off" placeholder="Type a message" />
+        <button id="send">Send</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    const loginDiv = document.getElementById('login');
+    const chatDiv = document.getElementById('chat');
+    const joinBtn = document.getElementById('join');
+    const usernameInput = document.getElementById('username');
+    const messages = document.getElementById('messages');
+    const form = document.getElementById('form');
+    const input = document.getElementById('input');
+
+    let username = '';
+
+    joinBtn.onclick = () => {
+      username = usernameInput.value.trim();
+      if (!username) return;
+      socket.emit('register', username);
+      loginDiv.style.display = 'none';
+      chatDiv.style.display = 'flex';
+    };
+
+    socket.on('room_full', msg => {
+      alert(msg);
+      location.reload();
+    });
+
+    socket.on('user_joined', msg => {
+      const item = document.createElement('li');
+      item.textContent = msg;
+      item.className = 'info';
+      messages.appendChild(item);
+    });
+
+    socket.on('user_left', msg => {
+      const item = document.createElement('li');
+      item.textContent = msg;
+      item.className = 'info';
+      messages.appendChild(item);
+    });
+
+    socket.on('chat message', ({ sender, msg }) => {
+      const item = document.createElement('li');
+      item.innerHTML = `<strong>${sender}:</strong> ${msg}`;
+      messages.appendChild(item);
+      messages.scrollTop = messages.scrollHeight;
+    });
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (input.value) {
+        socket.emit('chat message', input.value);
+        input.value = '';
+      }
+    });
+  </script>
+</body>
+</html>
